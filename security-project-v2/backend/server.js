@@ -126,47 +126,35 @@ app.use((err, req, res, next) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// seedDatabase() — Hash les mots de passe des utilisateurs par défaut au démarrage
+// seedDatabase() — Hash le mot de passe de l'admin au premier démarrage.
+// Le marqueur 'SEED_ON_START' est placé par init.sql ; il est remplacé
+// une seule fois par le hash bcrypt réel.
 // ─────────────────────────────────────────────────────────────────────────────
 const seedDatabase = async () => {
   try {
-    const [rows] = await pool.query(
-      "SELECT username FROM users WHERE password = 'SEED_ON_START'"
+    const [[admin]] = await pool.query(
+      "SELECT id FROM users WHERE username = 'admin' AND password = 'SEED_ON_START'"
     );
 
-    if (rows.length === 0) {
-      console.log('ℹ️  Passwords already seeded — skipping');
+    if (!admin) {
+      console.log('ℹ️  Admin password already seeded — skipping');
       return;
     }
 
-    console.log(`⏳ Seeding passwords for ${rows.length} user(s)...`);
+    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Admin@123';
+    const hash = await bcrypt.hash(ADMIN_PASSWORD, 12);
 
-    const credentials = [
-      { username: 'admin',             password: 'Admin@123'    },
-      { username: 'alice',             password: 'Alice@2024'   },
-      { username: 'bob',               password: 'Bob@2024'     },
-      { username: 'moderator',         password: 'Mod@2024'     },
-      { username: 'hacker_test',       password: 'Hack3r@2024'  },
-      { username: 'dev_user',          password: 'Dev@2024'     },
-      { username: 'security_analyst',  password: 'Sec@2024'     },
-    ];
+    await pool.query(
+      "UPDATE users SET password = ? WHERE username = 'admin' AND password = 'SEED_ON_START'",
+      [hash]
+    );
 
-    for (const cred of credentials) {
-      const hash = await bcrypt.hash(cred.password, 12);
-      await pool.query(
-        "UPDATE users SET password = ? WHERE username = ? AND password = 'SEED_ON_START'",
-        [hash, cred.username]
-      );
+    console.log('✅ Admin account seeded successfully');
+    console.log(`   username : admin`);
+    console.log(`   password : ${ADMIN_PASSWORD}`);
+    if (!process.env.ADMIN_PASSWORD) {
+      console.log('   ⚠️  Using default password — set ADMIN_PASSWORD env var in production');
     }
-
-    console.log('✅ Database seeded with demo users');
-    console.log('   admin / Admin@123  (admin)');
-    console.log('   alice / Alice@2024 (user)');
-    console.log('   bob   / Bob@2024   (user)');
-    console.log('   moderator / Mod@2024 (moderator)');
-    console.log('   hacker_test / Hack3r@2024 (user)');
-    console.log('   dev_user / Dev@2024 (user)');
-    console.log('   security_analyst / Sec@2024 (moderator)');
   } catch (err) {
     console.error('❌ Seed error:', err.message);
   }
