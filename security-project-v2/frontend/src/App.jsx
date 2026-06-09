@@ -4,6 +4,7 @@ import Sidebar      from './components/Layout/Sidebar';
 import Navbar       from './components/Layout/Navbar';
 import ToastNotifications from './components/Notifications/Toast';
 import Login        from './pages/Login';
+import Register     from './pages/Register';
 import Home         from './pages/Home';
 import SQLInjection from './pages/SQLInjection';
 import XSSAttacks   from './pages/XSSAttacks';
@@ -38,7 +39,11 @@ const Protected = ({ children }) => (
 export default function App() {
   return (
     <Routes>
+      {/* Routes publiques */}
       <Route path="/login"          element={<Login />} />
+      <Route path="/register"       element={<Register />} />
+
+      {/* Routes protégées */}
       <Route path="/"               element={<Protected><Home /></Protected>} />
       <Route path="/sqli"           element={<Protected><SQLInjection /></Protected>} />
       <Route path="/xss"            element={<Protected><XSSAttacks /></Protected>} />
